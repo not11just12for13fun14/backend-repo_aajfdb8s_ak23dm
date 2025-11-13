@@ -1,48 +1,41 @@
-"""
-Database Schemas
+from typing import Optional, Literal, List
+from pydantic import BaseModel, Field, EmailStr
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
+# ERIKA platform schemas
 
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
-"""
+class School(BaseModel):
+    name: str = Field(..., description="Verified school name")
+    address: str = Field(..., description="Full address from Photon/OSM")
+    latitude: float = Field(..., description="Latitude coordinate")
+    longitude: float = Field(..., description="Longitude coordinate")
+    admin_email: EmailStr = Field(..., description="Primary admin email")
+    osm_id: Optional[str] = Field(None, description="OSM/Photon place id for dedupe")
 
-from pydantic import BaseModel, Field
-from typing import Optional
+class PlatformUser(BaseModel):
+    email: EmailStr
+    display_name: str = Field(..., description="Full name to show in UI")
+    role: Literal['admin','student','teacher','parent']
+    school_id: str = Field(..., description="Reference to schools _id")
+    disabled: bool = False
 
-# Example schemas (replace with your own):
+class Assignment(BaseModel):
+    title: str
+    description: Optional[str] = None
+    due_date: Optional[str] = None
+    subject: Optional[str] = None
+    school_id: str
+    teacher_id: str
+    class_id: Optional[str] = None
 
-class User(BaseModel):
-    """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
-    """
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+class AttendanceRecord(BaseModel):
+    school_id: str
+    class_id: Optional[str] = None
+    student_id: str
+    date: str
+    status: Literal['present','absent','late','excused']
 
-class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
-
-# Add your own schemas here:
-# --------------------------------------------------
-
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+class Quiz(BaseModel):
+    school_id: str
+    title: str
+    questions: List[dict] = Field(default_factory=list)
+    source: Optional[str] = Field(None, description="material|ai|manual")
